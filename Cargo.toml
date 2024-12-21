@@ -3,8 +3,15 @@ name = "rust-redis-server"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-author = "Paxon Qiao <qiaopengjun0@gmail.com>"
+authors = ["Paxon Qiao <qiaopengjun0@gmail.com>"]
+description = "A simple redis server written in rust"
+repository = "https://github.com/qiaopengjun5162/rust-redis-server"
+homepage = "https://github.com/qiaopengjun5162/rust-redis-server"
+keywords = ["redis", "server", "rust-redis-server"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.94"
+bytes = "1.9.0"
+enum_dispatch = "0.3.13"
