@@ -1,17 +1,38 @@
 mod decode;
 mod encode;
 
+use bytes::BytesMut;
 use enum_dispatch::enum_dispatch;
 use std::collections::BTreeMap;
 use std::ops::{Deref, DerefMut};
-
+use thiserror::Error;
 #[enum_dispatch]
 pub trait RespEncode {
     fn encode(self) -> Vec<u8>;
 }
 
-pub trait RespDecode {
-    fn decode(buf: Self) -> Result<RespFrame, String>;
+pub trait RespDecode: Sized {
+    const PREFIX: &'static str;
+    fn decode(buf: &mut BytesMut) -> Result<Self, RespError>;
+    fn expect_length(buf: &[u8]) -> Result<usize, RespError>;
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum RespError {
+    #[error("Invalid frame: {0}")]
+    InvalidFrame(String),
+    #[error("Invalid frame type: {0}")]
+    InvalidFrameType(String),
+    #[error("Invalid frame length: {0}")]
+    InvalidFrameLength(isize),
+    #[error("Frame is not complete")]
+    NotComplete,
+    #[error("Parse error: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Utf8 error: {0}")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
+    #[error("Parse float error: {0}")]
+    ParseFloatError(#[from] std::num::ParseFloatError),
 }
 
 #[enum_dispatch(RespEncode)]
@@ -152,74 +173,47 @@ impl Default for RespMap {
     }
 }
 
-// impl From<SimpleString> for RespFrame {
-//     fn from(s: SimpleString) -> Self {
-//         RespFrame::SimpleString(s)
-//     }
-// }
+impl From<&str> for SimpleString {
+    fn from(s: &str) -> Self {
+        SimpleString(s.to_string())
+    }
+}
 
-// impl From<SimpleError> for RespFrame {
-//     fn from(s: SimpleError) -> Self {
-//         RespFrame::Error(s)
-//     }
-// }
+impl From<&str> for RespFrame {
+    fn from(s: &str) -> Self {
+        SimpleString(s.to_string()).into()
+    }
+}
 
-// impl From<i64> for RespFrame {
-//     fn from(s: i64) -> Self {
-//         RespFrame::Integer(s)
-//     }
-// }
+impl From<&str> for SimpleError {
+    fn from(s: &str) -> Self {
+        SimpleError(s.to_string())
+    }
+}
 
-// impl From<BulkString> for RespFrame {
-//     fn from(s: BulkString) -> Self {
-//         RespFrame::BulkString(s)
-//     }
-// }
+impl From<&str> for BulkString {
+    fn from(s: &str) -> Self {
+        BulkString(s.as_bytes().to_vec())
+    }
+}
+impl From<&[u8]> for BulkString {
+    fn from(s: &[u8]) -> Self {
+        BulkString(s.to_vec())
+    }
+}
+impl From<&[u8]> for RespFrame {
+    fn from(s: &[u8]) -> Self {
+        BulkString(s.to_vec()).into()
+    }
+}
 
-// impl From<RespNullBulkString> for RespFrame {
-//     fn from(s: RespNullBulkString) -> Self {
-//         RespFrame::NullBulkString(s)
-//     }
-// }
-
-// impl From<RespArray> for RespFrame {
-//     fn from(s: RespArray) -> Self {
-//         RespFrame::Array(s)
-//     }
-// }
-
-// impl From<RespNull> for RespFrame {
-//     fn from(s: RespNull) -> Self {
-//         RespFrame::Null(s)
-//     }
-// }
-
-// impl From<RespNullArray> for RespFrame {
-//     fn from(s: RespNullArray) -> Self {
-//         RespFrame::NullArray(s)
-//     }
-// }
-
-// impl From<bool> for RespFrame {
-//     fn from(s: bool) -> Self {
-//         RespFrame::Boolean(s)
-//     }
-// }
-
-// impl From<f64> for RespFrame {
-//     fn from(s: f64) -> Self {
-//         RespFrame::Double(s)
-//     }
-// }
-
-// impl From<RespMap> for RespFrame {
-//     fn from(s: RespMap) -> Self {
-//         RespFrame::Map(s)
-//     }
-// }
-
-// impl From<RespSet> for RespFrame {
-//     fn from(s: RespSet) -> Self {
-//         RespFrame::Set(s)
-//     }
-// }
+impl<const N: usize> From<&[u8; N]> for BulkString {
+    fn from(s: &[u8; N]) -> Self {
+        BulkString(s.to_vec())
+    }
+}
+impl<const N: usize> From<&[u8; N]> for RespFrame {
+    fn from(s: &[u8; N]) -> Self {
+        BulkString(s.to_vec()).into()
+    }
+}
