@@ -12,6 +12,7 @@ keywords = ["redis", "server", "rust-redis-server"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 bytes = "1.9.0"
 enum_dispatch = "0.3.13"
+thiserror = "2.0.9"
