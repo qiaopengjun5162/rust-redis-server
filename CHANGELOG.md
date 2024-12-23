@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.1.1-frame-decode](https://github.com/qiaopengjun5162/rust-redis-server/compare/v0.1.0-frame-encoding..v0.1.1-frame-decode) - 2024-12-22
+
+### Features
+
+- support RespFrame decode - ([76089c1](https://github.com/qiaopengjun5162/rust-redis-server/commit/76089c13f9bddada7967f1e10401bf3946c0af58)) - QiaoPengjun5162
+
+### Other
+
+- Merge pull request #2 from qiaopengjun5162/feature/redis_decode
+
+feature: support RespFrame decode - ([20d6583](https://github.com/qiaopengjun5162/rust-redis-server/commit/20d6583801796a94530698d8f3c1d071cbb31071)) - Paxon Qiao 乔鹏军
+
+---
 ## [0.1.0-frame-encoding] - 2024-12-21
 
 ### Features
