@@ -14,5 +14,7 @@ keywords = ["redis", "server", "rust-redis-server"]
 [dependencies]
 anyhow = "1.0.95"
 bytes = "1.9.0"
+dashmap = "6.1.0"
 enum_dispatch = "0.3.13"
+lazy_static = "1.5.0"
 thiserror = "2.0.9"
