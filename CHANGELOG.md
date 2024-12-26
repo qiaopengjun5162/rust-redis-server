@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [0.1.2-commands](https://github.com/qiaopengjun5162/rust-redis-server/compare/v0.1.1-frame-decode..v0.1.2-commands) - 2024-12-23
+
+### Features
+
+- support get/set, hget/hset/hgetall command - ([20dbc90](https://github.com/qiaopengjun5162/rust-redis-server/commit/20dbc901b422376d417d23d42c2eec3dcdfe9560)) - QiaoPengjun5162
+
+### Other
+
+- Merge pull request #3 from qiaopengjun5162/feature/redis_cmd
+
+feature: support get/set, hget/hset/hgetall command - ([bd03c96](https://github.com/qiaopengjun5162/rust-redis-server/commit/bd03c96d44645e2e63b2ab0f1b75403bfed3c256)) - Paxon Qiao 乔鹏军
+
+---
 ## [0.1.1-frame-decode](https://github.com/qiaopengjun5162/rust-redis-server/compare/v0.1.0-frame-encoding..v0.1.1-frame-decode) - 2024-12-22
 
 ### Features

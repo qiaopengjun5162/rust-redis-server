@@ -97,30 +97,6 @@ impl RespDecode for SimpleString {
     const PREFIX: &'static str = "+";
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
         let end = extract_simple_frame_data(buf, Self::PREFIX)?;
-        // if buf.len() < 3 {
-        //     return Err(RespError::NotComplete);
-        // }
-        // if !buf.starts_with(b"+") {
-        //     return Err(RespError::InvalidFrameType(format!(
-        //         "expect: SimpleString(+), got: {:?}",
-        //         buf
-        //     )));
-        // }
-        // search for "\r\n"
-        // let mut end = 0;
-        // for i in 0..buf.len() - 1 {
-        //     if buf[i] == b'\r' && buf[i + 1] == b'\n' {
-        //         end = i;
-        //         break;
-        //     }
-        // }
-        // if end == 0 {
-        //     return Err(RespError::NotComplete);
-        // }
-
-        // split the buffer
-        // let data = buf.split_to(end + 2);
-        // let s = String::from_utf8_lossy(&data[1..end]);
 
         let data = buf.split_to(end + CRLF_LEN);
         let s = String::from_utf8_lossy(&data[Self::PREFIX.len()..end]);
@@ -136,32 +112,7 @@ impl RespDecode for SimpleString {
 impl RespDecode for SimpleError {
     const PREFIX: &'static str = "-";
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
-        // if buf.len() < 3 {
-        //     return Err(RespError::NotComplete);
-        // }
-        // if !buf.starts_with(b"-") {
-        //     return Err(RespError::InvalidFrameType(format!(
-        //         "expect: SimpleError(-), got: {:?}",
-        //         buf
-        //     )));
-        // }
-
-        // search for "\r\n"
-        // let mut end = 0;
-        // for i in 0..buf.len() - 1 {
-        //     if buf[i] == b'\r' && buf[i + 1] == b'\n' {
-        //         end = i;
-        //         break;
-        //     }
-        // }
-        // if end == 0 {
-        //     return Err(RespError::NotComplete);
-        // }
-
         // // split the buffer
-        // let data = buf.split_to(end + 2);
-        // let s = String::from_utf8_lossy(&data[1..end]);
-
         let end = extract_simple_frame_data(buf, Self::PREFIX)?;
         let data = buf.split_to(end + CRLF_LEN);
         let s = String::from_utf8_lossy(&data[Self::PREFIX.len()..end]);
@@ -228,6 +179,15 @@ impl RespDecode for i64 {
 
 impl RespDecode for bool {
     const PREFIX: &'static str = "#";
+    /// Decode a RESP boolean frame.
+    ///
+    /// `#t\r\n` is `true`, `#f\r\n` is `false`.
+    ///
+    /// Errors:
+    ///
+    /// - `RespError::NotComplete` if the buffer is not complete.
+    /// - `RespError::InvalidFrameType` if the prefix is not `#`.
+    /// - `RespError::InvalidFrameLength` if the length is not 1 or 2.
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
         match extract_fixed_data(buf, "#t\r\n", "Bool") {
             Ok(_) => Ok(true),
@@ -248,10 +208,6 @@ impl RespDecode for bool {
 impl RespDecode for BulkString {
     const PREFIX: &'static str = "$";
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
-        // let prefix = "$";
-        // let end = extract_simple_frame_data(buf, prefix, 1)?;
-        // we should get the length of the bulk string first before split,
-
         let (end, len) = parse_length(buf, Self::PREFIX)?;
         let remained = &buf[end + CRLF_LEN..];
         if remained.len() < len + CRLF_LEN {
@@ -376,6 +332,21 @@ fn extract_fixed_data(
     Ok(())
 }
 
+/// Extracts the data of a simple RESP frame from the buffer.
+///
+/// # Parameters
+///
+/// * `buf`: A byte slice containing the RESP data.
+/// * `prefix`: The prefix of the RESP frame.
+///
+/// # Returns
+///
+/// * `Result<usize, RespError>`: The index of the end of the extracted data, or an error if the data is incomplete.
+///
+/// # Errors
+///
+/// * `RespError::NotComplete`: If the data is incomplete.
+/// * `RespError::InvalidFrameType`: If the frame type is invalid.
 fn extract_simple_frame_data(buf: &[u8], prefix: &str) -> Result<usize, RespError> {
     if buf.len() < 3 {
         return Err(RespError::NotComplete);
@@ -411,6 +382,22 @@ fn parse_length(buf: &[u8], prefix: &str) -> Result<(usize, usize), RespError> {
     Ok((end, s.parse()?))
 }
 
+/// Calculates the total length of a RESP data structure based on its prefix and length.
+///
+/// # Parameters
+///
+/// * `buf`: A byte slice containing the RESP data structure.
+/// * `end`: The index of the end of the length prefix in the buffer.
+/// * `len`: The length of the RESP data structure.
+/// * `prefix`: The prefix of the RESP data structure.
+///
+/// # Returns
+///
+/// * `Result<usize, RespError>`: The total length of the RESP data structure, or an error if the data structure is incomplete.
+///
+/// # Errors
+///
+/// * `RespError::NotComplete`: If the data structure is incomplete.
 fn calc_total_length(buf: &[u8], end: usize, len: usize, prefix: &str) -> Result<usize, RespError> {
     let mut total = end + CRLF_LEN;
     let mut data = &buf[total..];
