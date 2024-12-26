@@ -27,6 +27,7 @@ pub trait CommandExecutor {
     fn execute(self, backend: &Backend) -> RespFrame;
 }
 
+#[derive(Debug)]
 #[enum_dispatch(CommandExecutor)]
 pub enum Command {
     Get(Get),
@@ -34,6 +35,8 @@ pub enum Command {
     HGet(HGet),
     HSet(HSet),
     HGetAll(HGetAll),
+    // unrecognized commands
+    Unrecognized(Unrecognized),
 }
 
 #[derive(Debug)]
@@ -65,6 +68,30 @@ pub struct HGetAll {
     key: String,
 }
 
+#[derive(Debug)]
+pub struct Unrecognized;
+
+impl TryFrom<RespFrame> for Command {
+    type Error = CommandError;
+
+    /// Converts a RESP frame into a Command.
+    ///
+    /// The RESP frame must be an array, which is the command name followed by
+    /// the arguments. The command name must be a BulkString frame, and the
+    /// arguments can be any RESP frame.
+    ///
+    /// If the conversion is successful, a Command is returned. If the conversion
+    /// fails, an Err containing the CommandError is returned.
+    fn try_from(frame: RespFrame) -> Result<Self, Self::Error> {
+        match frame {
+            RespFrame::Array(array) => array.try_into(),
+            _ => Err(CommandError::InvalidCommand(
+                "Command must be an array".to_string(),
+            )),
+        }
+    }
+}
+
 impl TryFrom<RespArray> for Command {
     type Error = CommandError;
 
@@ -76,15 +103,18 @@ impl TryFrom<RespArray> for Command {
                 b"hget" => Ok(HGet::try_from(frame)?.into()),
                 b"hset" => Ok(HSet::try_from(frame)?.into()),
                 b"hgetall" => Ok(HGetAll::try_from(frame)?.into()),
-                _ => Err(CommandError::InvalidCommand(format!(
-                    "Invalid command: {}",
-                    String::from_utf8_lossy(cmd.as_ref())
-                ))),
+                _ => Ok(Unrecognized.into()),
             },
             _ => Err(CommandError::InvalidCommand(
                 "Command must have a BulkString as the first argument".to_string(),
             )),
         }
+    }
+}
+
+impl CommandExecutor for Unrecognized {
+    fn execute(self, _backend: &Backend) -> RespFrame {
+        RESP_OK.clone()
     }
 }
 
